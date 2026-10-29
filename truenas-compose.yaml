@@ -1,12 +1,32 @@
 # Paal 13 WhatsApp-gateway — plakken in TrueNAS SCALE:
 #   Apps › Discover Apps › ⋮ (rechtsboven) › Install via YAML
-# Vul de twee regels met VUL_IN in. Zie README.md voor de stappen.
-# HTTPS loopt via Nginx Proxy Manager: proxy host wa.paal13.com → http://<truenas-ip>:30380
+# Vul de vier plekken met VUL_IN in. Zie README.md voor de stappen.
+#
+# Bereikbaar via Tailscale Funnel: https://paal13-wa.<jouw-tailnet>.ts.net
+# Geen poorten open, geen router- of DNS-wijzigingen nodig.
 
 services:
+  tailscale:
+    image: tailscale/tailscale:latest
+    hostname: paal13-wa                # wordt https://paal13-wa.<tailnet>.ts.net
+    restart: unless-stopped
+    environment:
+      TS_AUTHKEY: "VUL_IN"             # auth key uit login.tailscale.com › Settings › Keys
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_SERVE_CONFIG: /config/serve.json
+      TS_USERSPACE: "true"
+    volumes:
+      - /mnt/VUL_IN/apps/paal13-wa-gateway/tailscale:/var/lib/tailscale
+    configs:
+      - source: ts-serve
+        target: /config/serve.json
+    ports:
+      - "30380:3000"                   # koppelpagina ook binnen je eigen netwerk: http://<truenas-ip>:30380/koppelen
+
   wa-gateway:
     image: ghcr.io/lucasdonker/paal13-wa-gateway:latest
     restart: unless-stopped
+    network_mode: service:tailscale    # deelt het netwerk met Tailscale; Funnel stuurt naar 127.0.0.1:3000
     user: "568:568"                    # de standaard 'apps'-gebruiker van TrueNAS
     environment:
       KOPPEL_WACHTWOORD: "VUL_IN"      # wachtwoord voor de koppelpagina (zelf verzinnen, lang)
@@ -14,6 +34,14 @@ services:
       TZ: Europe/Amsterdam
       # API_SLEUTEL leeg laten: de gateway maakt er zelf één en toont die op de koppelpagina.
     volumes:
-      - /mnt/VUL_IN/apps/paal13-wa-gateway:/data   # dataset voor de WhatsApp-sessie; pas het pad aan
-    ports:
-      - "30380:3000"                   # Nginx Proxy Manager stuurt hierheen door
+      - /mnt/VUL_IN/apps/paal13-wa-gateway:/data   # dataset voor de WhatsApp-sessie
+    depends_on:
+      - tailscale
+
+configs:
+  ts-serve:
+    # $${...} = letterlijk ${...}: Tailscale vult daar zelf de eigen ts.net-naam in.
+    content: |
+      {"TCP": {"443": {"HTTPS": true}},
+       "Web": {"$${TS_CERT_DOMAIN}:443": {"Handlers": {"/": {"Proxy": "http://127.0.0.1:3000"}}}},
+       "AllowFunnel": {"$${TS_CERT_DOMAIN}:443": true}}
