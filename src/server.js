@@ -113,6 +113,7 @@ async function meld(oud, nieuw, fout) {
 async function start() {
   clearTimeout(herstartTimer);
   const mijnGeneratie = ++generatie;
+  T.koppelcode = null; // een koppelcode hoort bij één socket; na een herstart is hij ongeldig
   await fs.mkdir(authDir, { recursive: true });
   const { state, saveCreds } = await useMultiFileAuthState(authDir);
 
@@ -476,7 +477,7 @@ ${T.status === 'koppelen' ? `
 <div class="kaart">
   <h2>Koppelen met code (handig op je telefoon)</h2>
   ${T.koppelcode ? `<div class="code">${esc(T.koppelcode)}</div>
-  <p class="klein">Op de gateway-telefoon: WhatsApp › Instellingen › Gekoppelde apparaten › Apparaat koppelen › <b>Koppelen met telefoonnummer</b>, en voer deze code in.</p>` : `
+  <p class="klein">Op de gateway-telefoon: WhatsApp › Instellingen › Gekoppelde apparaten › Apparaat koppelen › <b>Koppelen met telefoonnummer</b>, en voer deze code in. Verdwijnt de code, dan was hij verlopen: vraag een nieuwe aan.</p>` : `
   <form method="post" action="/koppelen/code">
     <input name="nummer" inputmode="tel" placeholder="Nummer van de gateway-telefoon, bijv. 0612345678" required>
     <button>Koppelcode aanvragen</button>
