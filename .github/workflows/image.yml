@@ -1,0 +1,52 @@
+# Bouwt de WhatsApp-gateway als Docker-image en zet hem op ghcr.io.
+# De TrueNAS haalt dat image op; zelf bouwen op de server is niet nodig.
+#
+#   main         → ghcr.io/lucasdonker/paal13-wa-gateway:latest   (wat de TrueNAS draait)
+#   Development  → ghcr.io/lucasdonker/paal13-wa-gateway:dev      (om eerst te testen)
+#
+# Met "Run workflow" kan het ook met de hand.
+name: WhatsApp-gateway image
+
+on:
+  push:
+    branches: [main, Development]
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  bouw:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/paal13-wa-gateway
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=dev,enable=${{ github.ref != 'refs/heads/main' }}
+            type=sha,prefix=,format=short
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

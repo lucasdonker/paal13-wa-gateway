@@ -1,0 +1,27 @@
+# Paal 13 WhatsApp-gateway — plakken in TrueNAS SCALE:
+#   Apps › Discover Apps › ⋮ (rechtsboven) › Install via YAML
+# Vul de drie regels met VUL_IN in. Zie README.md voor de stappen.
+
+services:
+  wa-gateway:
+    image: ghcr.io/lucasdonker/paal13-wa-gateway:latest
+    restart: unless-stopped
+    user: "568:568"                    # de standaard 'apps'-gebruiker van TrueNAS
+    environment:
+      KOPPEL_WACHTWOORD: "VUL_IN"      # wachtwoord voor de koppelpagina (zelf verzinnen, lang)
+      MELDING_WEBHOOK: ""              # optioneel: https://ntfy.sh/<geheim-onderwerp> voor een pushbericht bij uitloggen
+      TZ: Europe/Amsterdam
+      # API_SLEUTEL leeg laten: de gateway maakt er zelf één en toont die op de koppelpagina.
+    volumes:
+      - /mnt/VUL_IN/apps/paal13-wa-gateway:/data   # dataset voor de WhatsApp-sessie; pas het pad aan
+    ports:
+      - "30380:3000"                   # koppelpagina binnen je eigen netwerk: http://<truenas-ip>:30380/koppelen
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: "VUL_IN"           # token uit Cloudflare Zero Trust › Networks › Tunnels
+    depends_on:
+      - wa-gateway
