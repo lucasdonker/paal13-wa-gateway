@@ -1,6 +1,7 @@
 # Paal 13 WhatsApp-gateway — plakken in TrueNAS SCALE:
 #   Apps › Discover Apps › ⋮ (rechtsboven) › Install via YAML
-# Vul de drie regels met VUL_IN in. Zie README.md voor de stappen.
+# Vul de twee regels met VUL_IN in. Zie README.md voor de stappen.
+# HTTPS loopt via Nginx Proxy Manager: proxy host wa.paal13.com → http://<truenas-ip>:30380
 
 services:
   wa-gateway:
@@ -15,13 +16,4 @@ services:
     volumes:
       - /mnt/VUL_IN/apps/paal13-wa-gateway:/data   # dataset voor de WhatsApp-sessie; pas het pad aan
     ports:
-      - "30380:3000"                   # koppelpagina binnen je eigen netwerk: http://<truenas-ip>:30380/koppelen
-
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    restart: unless-stopped
-    command: tunnel --no-autoupdate run
-    environment:
-      TUNNEL_TOKEN: "VUL_IN"           # token uit Cloudflare Zero Trust › Networks › Tunnels
-    depends_on:
-      - wa-gateway
+      - "30380:3000"                   # Nginx Proxy Manager stuurt hierheen door

@@ -5,8 +5,8 @@ API als WhatsReach (`POST /send`, `GET /devices`, header `X-API-Key`). Het solli
 verandert daardoor niet: je zet alleen in het beheer een andere Base URL en API-sleutel.
 
 ```
-sollicitatiesysteem (Cloud86)        TrueNAS                                   WhatsApp
-cron › wa_verstuur_res() ──HTTPS──▶ Cloudflare Tunnel ─▶ wa-gateway (Baileys) ──WebSocket──▶ servers ─▶ sollicitant
+sollicitatiesysteem (Cloud86)        TrueNAS                                         WhatsApp
+cron › wa_verstuur_res() ──HTTPS──▶ Nginx Proxy Manager ─▶ wa-gateway (Baileys) ──WebSocket──▶ servers ─▶ sollicitant
                                                           │
                                                           └─ /data/auth  (sessie = gekoppeld apparaat)
 gateway-telefoon (prepaid sim, WhatsApp) = hoofdtoestel; de gateway is een "gekoppeld apparaat", net als WhatsApp Web
@@ -26,11 +26,13 @@ gateway-telefoon (prepaid sim, WhatsApp) = hoofdtoestel; de gateway is een "geko
    zo hoeft de TrueNAS niet in te loggen bij GitHub.
 2. **Dataset maken.** TrueNAS › Datasets › onder je pool `apps` › Add Dataset › naam
    `paal13-wa-gateway`, Dataset Preset **Apps**. Hier staat straks de WhatsApp-sessie.
-3. **Tunnel maken.** Cloudflare › Zero Trust › Networks › Tunnels › Create a tunnel › Cloudflared.
-   Kopieer het token (de lange tekst na `--token`). Public hostname: `wa` . `paal13.com`,
-   type HTTP, URL `wa-gateway:3000`. (Dit vraagt dat paal13.com bij Cloudflare in beheer is.)
-4. **App installeren.** TrueNAS › Apps › Discover Apps › ⋮ › **Install via YAML**. Naam
-   `paal13-wa-gateway`, plak `truenas-compose.yaml` en vul de drie `VUL_IN`-plekken in.
+3. **App installeren.** TrueNAS › Apps › Discover Apps › ⋮ › **Install via YAML**. Naam
+   `paal13-wa-gateway`, plak `truenas-compose.yaml` en vul de twee `VUL_IN`-plekken in.
+4. **Proxy host in Nginx Proxy Manager.** DNS: A-record `wa.paal13.com` naar je publieke IP
+   (zoals je andere hosts). In NPM › Hosts › Proxy Hosts › Add: domain `wa.paal13.com`, scheme
+   `http`, forward host = IP van de TrueNAS, poort `30380`, Block Common Exploits aan. Tab SSL:
+   nieuw Let's Encrypt-certificaat, Force SSL aan. Het sollicitatiesysteem controleert het
+   certificaat, dus een geldig certificaat is verplicht.
 5. **Koppelen.** Open `https://wa.paal13.com/koppelen` (gebruikersnaam maakt niet uit, wachtwoord =
    `KOPPEL_WACHTWOORD`). Vul het nummer van de gateway-telefoon in › Koppelcode aanvragen. Op die
    telefoon: WhatsApp › Instellingen › Gekoppelde apparaten › Apparaat koppelen › Koppelen met

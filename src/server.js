@@ -278,8 +278,11 @@ function leesBody(req, max = 64 * 1024) {
   });
 }
 
+// Achter Nginx Proxy Manager komt alles binnen vanaf het IP van de proxy; het echte adres
+// staat dan in X-Real-IP / X-Forwarded-For. Zonder die headers: het directe adres.
 function clientIp(req) {
-  return String(req.headers['cf-connecting-ip'] || req.socket.remoteAddress || '?');
+  const xff = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return String(req.headers['x-real-ip'] || xff || req.headers['cf-connecting-ip'] || req.socket.remoteAddress || '?');
 }
 
 // Simpele rem op wachtwoord/sleutel raden: 10 fouten per 15 minuten per IP.
