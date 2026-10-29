@@ -259,7 +259,7 @@ function html(res, code, body, extraHeaders = {}) {
     'Content-Type': 'text/html; charset=utf-8',
     'Cache-Control': 'no-store',
     'X-Frame-Options': 'DENY',
-    'Referrer-Policy': 'no-referrer',
+    'Referrer-Policy': 'same-origin', // anders stuurt Safari Origin: null bij formulieren
     'Content-Security-Policy': "default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; form-action 'self'",
     ...extraHeaders,
   });
@@ -320,10 +320,16 @@ function koppelToegang(req, res) {
     html(res, 401, 'Inloggen vereist', { 'WWW-Authenticate': 'Basic realm="Paal 13 WhatsApp-gateway", charset="UTF-8"' });
     return false;
   }
-  // POST alleen vanaf deze pagina zelf.
-  if (req.method === 'POST') {
-    const origin = req.headers.origin;
-    if (origin && new URL(origin).host !== req.headers.host) { html(res, 403, 'Verboden'); return false; }
+  // POST alleen vanaf deze pagina zelf (tegen CSRF: browsers sturen Basic-auth ook mee vanaf
+  // andere sites). Achter Nginx Proxy Manager telt de host die de browser zag.
+  if (req.method === 'POST' && req.headers.origin) {
+    let host = null;
+    try { host = new URL(req.headers.origin).host; } catch { /* 'null' of onzin */ }
+    const eigen = [req.headers.host, req.headers['x-forwarded-host']].filter(Boolean);
+    if (!host || !eigen.includes(host)) {
+      html(res, 403, pagina('Geweigerd: dit formulier kwam niet van deze pagina. Herlaad de pagina en probeer opnieuw.'));
+      return false;
+    }
   }
   return true;
 }
