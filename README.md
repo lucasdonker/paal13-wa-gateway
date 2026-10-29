@@ -41,8 +41,9 @@ gateway-telefoon (prepaid sim, WhatsApp) = hoofdtoestel; de gateway is een "geko
    sleutel van de koppelpagina, Base URL = `https://wa.donkersolutions.nl`, afzendernummer leeg. Opslaan
    en onderaan een testbericht sturen.
 
-Bijwerken: na een push naar `main` staat er een nieuw `:latest`-image klaar; werk de app in
-TrueNAS › Apps bij (Update, of Edit › Save om het image opnieuw op te halen).
+Bijwerken: de compose heeft `pull_policy: always`. Na een push naar `main` (image klaar in
+Actions) haalt de app het nieuwe image op zodra hij herstart: TrueNAS › Apps › de app › Stop en
+daarna Start.
 
 ## De gateway-telefoon en de 14-dagenregel
 

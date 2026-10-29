@@ -6,6 +6,7 @@
 services:
   wa-gateway:
     image: ghcr.io/lucasdonker/paal13-wa-gateway:latest
+    pull_policy: always              # bij elke (her)start het nieuwste image ophalen
     restart: unless-stopped
     user: "568:568"                    # de standaard 'apps'-gebruiker van TrueNAS
     environment:
