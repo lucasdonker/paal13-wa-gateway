@@ -6,7 +6,7 @@ verandert daardoor niet: je zet alleen in het beheer een andere Base URL en API-
 
 ```
 sollicitatiesysteem (Cloud86)        TrueNAS                                         WhatsApp
-cron › wa_verstuur_res() ──HTTPS──▶ Tailscale Funnel    ─▶ wa-gateway (Baileys) ──WebSocket──▶ servers ─▶ sollicitant
+cron › wa_verstuur_res() ──HTTPS──▶ Nginx Proxy Manager ─▶ wa-gateway (Baileys) ──WebSocket──▶ servers ─▶ sollicitant
                                                           │
                                                           └─ /data/auth  (sessie = gekoppeld apparaat)
 gateway-telefoon (prepaid sim, WhatsApp) = hoofdtoestel; de gateway is een "gekoppeld apparaat", net als WhatsApp Web
@@ -25,27 +25,21 @@ gateway-telefoon (prepaid sim, WhatsApp) = hoofdtoestel; de gateway is een "geko
    `paal13-wa-gateway` › Package settings › Change visibility › Public. Er zit geen geheim in;
    zo hoeft de TrueNAS niet in te loggen bij GitHub.
 2. **Dataset maken.** TrueNAS › Datasets › onder je pool `apps` › Add Dataset › naam
-   `paal13-wa-gateway`, Dataset Preset **Apps**. Hier staan straks de WhatsApp-sessie en de
-   Tailscale-gegevens.
-3. **Tailscale klaarzetten** (login.tailscale.com, gratis account):
-   - DNS › **MagicDNS** aan en **HTTPS Certificates** aan.
-   - Settings › Keys › **Generate auth key** (niet herbruikbaar is prima). Kopieer de sleutel.
-   - Je tailnet-naam staat bij DNS (iets als `tail1234.ts.net`).
-4. **App installeren.** TrueNAS › Apps › Discover Apps › ⋮ › **Install via YAML**. Naam
-   `paal13-wa-gateway`, plak `truenas-compose.yaml` en vul de vier `VUL_IN`-plekken in
-   (auth key, koppelwachtwoord en twee keer de naam van je pool).
-5. **Tailscale-apparaat vastzetten.** In login.tailscale.com › Machines staat nu `paal13-wa`.
-   ⋯ › **Disable key expiry**, anders valt de verbinding na een half jaar weg. Werkt Funnel niet
-   (adres onbereikbaar)? Access controls › controleer dat leden het attribuut `funnel` hebben;
-   de console biedt dat zelf aan.
-6. **Koppelen.** Open `https://paal13-wa.<tailnet>.ts.net/koppelen` (gebruikersnaam maakt niet
-   uit, wachtwoord = `KOPPEL_WACHTWOORD`). Vul het nummer van de gateway-telefoon in › Koppelcode
-   aanvragen. Op die telefoon: WhatsApp › Instellingen › Gekoppelde apparaten › Apparaat koppelen
-   › Koppelen met telefoonnummer › code invoeren. Of scan de QR-code vanaf een ander scherm.
-   De eerste keer kan het adres een halve minuut duren: Tailscale vraagt dan het certificaat aan.
-7. **Sollicitatiesysteem omzetten.** Beheer › Instellingen › Kanalen › WhatsApp: API-sleutel = de
-   sleutel van de koppelpagina, Base URL = `https://paal13-wa.<tailnet>.ts.net`, afzendernummer
-   leeg. Opslaan en onderaan een testbericht sturen.
+   `paal13-wa-gateway`, Dataset Preset **Apps**. Hier staat straks de WhatsApp-sessie.
+3. **App installeren.** TrueNAS › Apps › Discover Apps › ⋮ › **Install via YAML**. Naam
+   `paal13-wa-gateway`, plak `truenas-compose.yaml` en vul de twee `VUL_IN`-plekken in.
+4. **Proxy host in Nginx Proxy Manager.** DNS: A-record `wa.donkersolutions.nl` naar je publieke IP
+   (zoals je andere hosts). In NPM › Hosts › Proxy Hosts › Add: domain `wa.donkersolutions.nl`, scheme
+   `http`, forward host = IP van de TrueNAS, poort `30380`, Block Common Exploits aan. Tab SSL:
+   nieuw Let's Encrypt-certificaat, Force SSL aan. Het sollicitatiesysteem controleert het
+   certificaat, dus een geldig certificaat is verplicht.
+5. **Koppelen.** Open `https://wa.donkersolutions.nl/koppelen` (gebruikersnaam maakt niet uit, wachtwoord =
+   `KOPPEL_WACHTWOORD`). Vul het nummer van de gateway-telefoon in › Koppelcode aanvragen. Op die
+   telefoon: WhatsApp › Instellingen › Gekoppelde apparaten › Apparaat koppelen › Koppelen met
+   telefoonnummer › code invoeren. Of scan de QR-code vanaf een ander scherm.
+6. **Sollicitatiesysteem omzetten.** Beheer › Instellingen › Kanalen › WhatsApp: API-sleutel = de
+   sleutel van de koppelpagina, Base URL = `https://wa.donkersolutions.nl`, afzendernummer leeg. Opslaan
+   en onderaan een testbericht sturen.
 
 Bijwerken: na een push naar `main` staat er een nieuw `:latest`-image klaar; werk de app in
 TrueNAS › Apps bij (Update, of Edit › Save om het image opnieuw op te halen).
